@@ -17,17 +17,25 @@ class Queue:
 
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         """Create Queue."""
+        # mensagem de subsrição
 
     def push(self, value):
         """Sends data to broker."""
+        # mensagem de publicação para o broker
+        # broker envia para todos os clientes que estão subscritos no topico
 
     def pull(self) -> (str, Any):
         """Receives (topic, data) from broker.
 
         Should BLOCK the consumer!"""
+        # o primeiro pull envia a ultima subscrição
+        # os próximos bloqueiam até alguém publicar algo no topico
 
     def list_topics(self, callback: Callable):
         """Lists all topics available in the broker."""
+        # essencialmente pelos consumidores
+        # enviar mensagem ao broker a pedir a lista de topicos
+        # não retorna nada
 
     def cancel(self):
         """Cancel subscription."""
@@ -43,3 +51,4 @@ class XMLQueue(Queue):
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
+
