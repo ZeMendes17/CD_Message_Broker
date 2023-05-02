@@ -16,22 +16,22 @@ class Message:
     def __init__(self, command):
         self.command = command
 
-    def __repr__(self): # this wiill be used in the subclasses to represent JSON messages
+    def __repr__(self): # this will be used in the subclasses to represent JSON messages
         return '{"command":'
     
-class RegisterMessage(Message):
+class SerializationMessage(Message):
     def __init__(self, command, code):
         super().__init__(command)
         self.code = code
 
     def __repr__(self):
-        return super().__repr__() + f'"register", "code": "{self.code}"' + '}'
+        return super().__repr__() + f'"type", "code": "{self.code}"' + '}'
 
     def pickleMsg(self):
-        return {"command": "register", "code": self.code}
+        return {"command": "type", "code": self.code}
     
     def xmlMsg(self):
-        return f'<?xml version="1.0"?><data command="{self.command}" code="{self.code}"></data>'
+        return f'<?xml version="1.0"?><data type="{self.command}" code="{self.code}"></data>'
 
 class SubMessage(Message):
     """Message to subscribe to a given topic."""
@@ -51,18 +51,19 @@ class SubMessage(Message):
 
 class PubMessage(Message):
     """Message to publish a given topic."""
-    def __init__(self, command, topic):
+    def __init__(self, command, topic, value):
         super().__init__(command)
         self.topic = topic
+        self.value = value
 
     def __repr__(self):
-        return super().__repr__() + f'"publish, "topic": "{self.topic}"' + '}'
+        return super().__repr__() + f'"publish", "topic": "{self.topic}", "value": "{self.value}"' + '}'
     
     def pickleMsg(self):
-        return {"command": "publish", "topic": self.topic}
+        return {"command": "publish", "topic": self.topic, "value": self.value}
     
     def xmlMsg(self):
-        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
+        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic} value="{self.value}"></data>'
 
 class AskListMessage(Message):
     def __init__(self, command):
@@ -87,7 +88,7 @@ class ListMessage(Message):
         return super().__repr__() + f'list, "topics": {self.topics}' + '}'
     
     def pickleMsg(self):
-        return {"command": "list"}
+        return {"command": "list", "topics": self.topics}
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data command="{self.command}" topics="{self.topics}"></data>'
@@ -106,14 +107,29 @@ class CancelMessage(Message):
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
+    
+class ReplyMessage(Message):
+    def __init__(self, command, topic, value):
+        super().__init__(command)
+        self.topic = topic
+        self.value = value
+
+    def __repr__(self):
+        return super().__repr__() + f'reply, "topic": "{self.topic}", "value": "{self.value}"' + '}'
+    
+    def pickleMsg(self):
+        return {"command": "reply", "topic": self.topic, "value": self.value}
+    
+    def xmlMsg(self):
+        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic} value="{self.value}"></data>'
 
 class Protocol:
     """Protocol that implements the messages above"""
 
     @classmethod
-    def register(cls, code) -> RegisterMessage:
+    def serialize(cls, code) -> SerializationMessage:
         """Creates a RegsiterMessage object."""
-        return RegisterMessage('register', code)
+        return SerializationMessage('type', code)
 
     @classmethod
     def subscribe(cls, topic: str) -> SubMessage:
@@ -121,9 +137,9 @@ class Protocol:
         return SubMessage('subscribe', topic)
     
     @classmethod
-    def publish(cls, topic: str) -> PubMessage:
+    def publish(cls, topic: str, value: str) -> PubMessage:
         """Creates a PubMessage object."""
-        return PubMessage('publish', topic)
+        return PubMessage('publish', topic, value)
     
     @classmethod
     def ask_list(cls) -> AskListMessage:
@@ -140,6 +156,10 @@ class Protocol:
         """Creates a CancelMessage object."""
         return CancelMessage('cancel', topic)
     
+    @classmethod
+    def reply(cls, topic: str, value: str) -> ReplyMessage:
+        """Creates a ReplyMessage object."""
+        return ReplyMessage('reply', topic, value)
 
     @classmethod
     def send_msg(cls, connection: socket, msg: Message, code):
@@ -203,8 +223,8 @@ class Protocol:
 
         command = message["command"]
 
-        if command == "register":
-            return cls.register(message["code"])
+        if command == "type":
+            return cls.serialize(message["code"])
 
         elif command == "subscribe":
             return cls.subscribe(message["topic"])
@@ -220,6 +240,9 @@ class Protocol:
         
         elif command == "cancel":
             return cls.list(message["topic"])
+        
+        elif command == "reply":
+            return cls.reply(message["topic"], message["value"])
 
         else:
             return None
