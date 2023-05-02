@@ -1,16 +1,13 @@
 import socket
-import json
-import pickle
-import xml.etree.ElementTree as ET
 import selectors
 
 from src.middleware import MiddlewareType
-from .protocol import Protocol, ProtocolBadFormat
+from .protocol import Protocol
 
 """Middleware to communicate with PubSub Message Broker."""
 from collections.abc import Callable
 from enum import Enum
-from queue import LifoQueue, Empty
+from queue import LifoQueue, Empty # needed?
 from typing import Any
 
 
@@ -38,8 +35,8 @@ class Queue:
         self.socket.connect((self.host, self.port))
         self.selector.register(self.socket, selectors.EVENT_READ, self.pull)
 
-        if _type == MiddlewareType.CONSUMER:
-            Protocol.send_msg(self.socket, Protocol.subscribe(self.topic), self.code)
+        # if _type == MiddlewareType.CONSUMER:
+        #     Protocol.send_msg(self.socket, Protocol.subscribe(self.topic), self.code)
 
 
     def push(self, value):
@@ -79,7 +76,10 @@ class JSONQueue(Queue):
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
         self.code = 0
-        Protocol.send_msg(self.socket, Protocol.register(self.code), self.code)
+        Protocol.send_msg(self.socket, Protocol.serialize(self.code), self.code)
+
+        if _type == MiddlewareType.CONSUMER:
+            Protocol.send_msg(self.socket, Protocol.subscribe(topic), self.code)
 
 
 class XMLQueue(Queue):
@@ -87,7 +87,10 @@ class XMLQueue(Queue):
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
         self.code = 1
-        Protocol.send_msg(self.socket, Protocol.register(self.code), self.code)
+        Protocol.send_msg(self.socket, Protocol.serialize(self.code), self.code)
+
+        if _type == MiddlewareType.CONSUMER:
+            Protocol.send_msg(self.socket, Protocol.subscribe(topic), self.code)
 
 class PickleQueue(Queue):
     """Queue implementation with Pickle based serialization."""
@@ -95,3 +98,6 @@ class PickleQueue(Queue):
         super().__init__(topic, _type)
         self.code = 2
         Protocol.send_msg(self.socket, Protocol.register(self.code), self.code)
+
+        if _type == MiddlewareType.CONSUMER:
+            Protocol.send_msg(self.socket, Protocol.subscribe(topic), self.code)

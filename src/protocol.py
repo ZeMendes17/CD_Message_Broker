@@ -230,7 +230,7 @@ class Protocol:
             return cls.subscribe(message["topic"])
 
         elif command == "publish":
-            return cls.publish(message["topic"])
+            return cls.publish(message["topic"], message["value"])
 
         elif command == "ask":
             return cls.ask_list()
