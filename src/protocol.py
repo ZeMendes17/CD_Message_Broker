@@ -25,10 +25,10 @@ class SerializationMessage(Message):
         self.code = code
 
     def __repr__(self):
-        return super().__repr__() + f'"type", "code": "{self.code}"' + '}'
+        return super().__repr__() + f'"{self.command}", "code": "{self.code}"' + '}'
 
     def pickleMsg(self):
-        return {"command": "type", "code": self.code}
+        return {"command": self.command, "code": self.code}
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data type="{self.command}" code="{self.code}"></data>'
@@ -40,10 +40,10 @@ class SubMessage(Message):
         self.topic = topic
     
     def __repr__(self):
-        return super().__repr__() + f'"subscribe, "topic": "{self.topic}"' + '}'
+        return super().__repr__() + f'"{self.command}", "topic": "{self.topic}"' + '}'
     
     def pickleMsg(self):
-        return {"command": "subscribe", "topic": self.topic}
+        return {"command": self.command, "topic": self.topic}
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
@@ -57,23 +57,23 @@ class PubMessage(Message):
         self.value = value
 
     def __repr__(self):
-        return super().__repr__() + f'"publish", "topic": "{self.topic}", "value": "{self.value}"' + '}'
+        return super().__repr__() + f'"{self.command}", "topic": "{self.topic}", "value": {self.value}' + '}'
     
     def pickleMsg(self):
-        return {"command": "publish", "topic": self.topic, "value": self.value}
+        return {"command": self.command, "topic": self.topic, "value": self.value}
     
     def xmlMsg(self):
-        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic} value="{self.value}"></data>'
+        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}" value="{self.value}"></data>'
 
 class AskListMessage(Message):
     def __init__(self, command):
         super().__init__(command)
 
     def __repr__(self):
-        return super().__repr__() + f'"ask' + '}'
+        return super().__repr__() + f'"{self.command}"' + '}'
 
     def pickleMsg(self):
-        return {"command": "ask"}
+        return {"command": self.command}
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data command="{self.command}"></data>'
@@ -85,10 +85,10 @@ class ListMessage(Message):
         self.topics = topics
 
     def __repr__(self):
-        return super().__repr__() + f'list, "topics": {self.topics}' + '}'
+        return super().__repr__() + f'"{self.command}", "topics": {self.topics}' + '}'
     
     def pickleMsg(self):
-        return {"command": "list", "topics": self.topics}
+        return {"command": self.command, "topics": self.topics}
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data command="{self.command}" topics="{self.topics}"></data>'
@@ -100,28 +100,28 @@ class CancelMessage(Message):
         self.topic = topic
     
     def __repr__(self):
-        return super().__repr__() + f'cancel, "topic": "{self.topic}"' + '}'
+        return super().__repr__() + f'"{self.command}", "topic": "{self.topic}"' + '}'
     
     def pickleMsg(self):
-        return {"command": "cancel", "topic": self.topic}
+        return {"command": self.command, "topic": self.topic}
     
     def xmlMsg(self):
         return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic}"></data>'
     
-class ReplyMessage(Message):
-    def __init__(self, command, topic, value):
-        super().__init__(command)
-        self.topic = topic
-        self.value = value
+# class ReplyMessage(Message):
+#     def __init__(self, command, topic, value):
+#         super().__init__(command)
+#         self.topic = topic
+#         self.value = value
 
-    def __repr__(self):
-        return super().__repr__() + f'reply, "topic": "{self.topic}", "value": "{self.value}"' + '}'
+#     def __repr__(self):
+#         return super().__repr__() + f'"{self.command}", "topic": "{self.topic}", "value": {self.value}' + '}'
     
-    def pickleMsg(self):
-        return {"command": "reply", "topic": self.topic, "value": self.value}
+#     def pickleMsg(self):
+#         return {"command": self.command, "topic": self.topic, "value": self.value}
     
-    def xmlMsg(self):
-        return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic} value="{self.value}"></data>'
+#     def xmlMsg(self):
+#         return f'<?xml version="1.0"?><data command="{self.command}" topic="{self.topic} value="{self.value}"></data>'
 
 class Protocol:
     """Protocol that implements the messages above"""
@@ -137,7 +137,7 @@ class Protocol:
         return SubMessage('subscribe', topic)
     
     @classmethod
-    def publish(cls, topic: str, value: str) -> PubMessage:
+    def publish(cls, topic: str, value) -> PubMessage:
         """Creates a PubMessage object."""
         return PubMessage('publish', topic, value)
     
@@ -156,14 +156,16 @@ class Protocol:
         """Creates a CancelMessage object."""
         return CancelMessage('cancel', topic)
     
-    @classmethod
-    def reply(cls, topic: str, value: str) -> ReplyMessage:
-        """Creates a ReplyMessage object."""
-        return ReplyMessage('reply', topic, value)
+    # @classmethod
+    # def reply(cls, topic: str, value: str) -> ReplyMessage:
+    #     """Creates a ReplyMessage object."""
+    #     return ReplyMessage('reply', topic, value)
 
     @classmethod
     def send_msg(cls, connection: socket, msg: Message, code):
         """Sends through a connection a Message object."""
+
+        if code == None: code=0
 
         if type(code) == str:
             code = int(code)
@@ -241,8 +243,8 @@ class Protocol:
         elif command == "cancel":
             return cls.list(message["topic"])
         
-        elif command == "reply":
-            return cls.reply(message["topic"], message["value"])
+        # elif command == "reply":
+        #     return cls.reply(message["topic"], message["value"])
 
         else:
             return None

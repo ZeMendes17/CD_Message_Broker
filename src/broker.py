@@ -27,17 +27,20 @@ class Broker:
         self.subscribers = {} # topic -> [(client, serialization),...]
         self.socketSerialization = {} # socket -> Serialization (JSON, XML, PICKLE)
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((self._host, self._port))
         self.socket.listen(100)
         self.selector = selectors.DefaultSelector()
         self.selector.register(self.socket, selectors.EVENT_READ, self.accept)
 
+        print("BROKER initializaing...")
+
 
     def accept(self, sock, mask):
         conn, addr = sock.accept()                                  
         print('accepted', conn, 'from', addr)
-        conn.setblocking(False)
-        self.sel.register(conn, selectors.EVENT_READ, self.read)
+        # conn.setblocking(False)
+        self.selector.register(conn, selectors.EVENT_READ, self.read)
 
 
     def read(self, conn, mask):
@@ -112,6 +115,8 @@ class Broker:
 
     def list_subscriptions(self, topic: str) -> List[Tuple[socket.socket, Serializer]]:
         """Provide list of subscribers to a given topic."""
+        if topic not in self.subscribers.keys():
+            return []
         return [sub for sub in self.subscribers[topic]]
 
     def subscribe(self, topic: str, address: socket.socket, _format: Serializer = None):
@@ -130,7 +135,7 @@ class Broker:
                 else:
                     self.subscribers[t] = [(address, _format)]
         
-        Protocol.send_msg(address, Protocol.reply(topic, self.get_topic(topic)), _format) # sends the last message to the subscriber
+        Protocol.send_msg(address, Protocol.publish(topic, self._topics[topic]), _format) # sends the last message to the subscriber
 
         
 
