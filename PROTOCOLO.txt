@@ -1,0 +1,17 @@
+O protocolo que foi utilizado para o envio de mensagens encontra-se no ficheiro src/protocol.py.
+Neste ficheiro foi declarada uma classe principal que é Mensagem que será herdada pelos diferentes tipos de mensagem.
+
+Mensagens usadas:
+SerializationMessage, que serve para a socket registar o seu tipo de encode: {"command": self.command, "code": self.code};
+SubMessage, que representa uma subscrição num determinado tópico: {"command": self.command, "topic": self.topic};
+PubMessage, que representa uma publicação num tópico com o respetivo valor: {"command": self.command, "topic": self.topic, "value": self.value};
+AskListMessage, mensagem que pede pela listagem dos tópicos: {"command": self.command};
+ListMessage, mensagem que possui a lista de tópicos: {"command": self.command, "topics": self.topics};
+CancelMessage, mensagem para cancelar a subscrição num tópico: {"command": self.command, "topic": self.topic}.
+
+Cada uma destas mensagens implementa uma função que retorna JSON (__repr__()), XML (xmlMsg()) e PICKLE (pickleMsg()).
+
+De seguida, possui uma classe Protocol que cria objetos de cada uma das mensagens.
+Este possui, também, os metódos send_msg, que envia um determinado tipo de mensagem com uma determinada codificação
+enviando em big endian 1 byte para indicar o tipo e mais 2 para indicar o compimento da mensagem, antes de enviar a
+mensagem em concreto, e o método recv_msg que em oposição ao primeiro rececebe a mensagem e descodifica-a.

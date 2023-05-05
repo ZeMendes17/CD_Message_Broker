@@ -53,15 +53,22 @@ class Broker:
             if msgCommand == 'type': #SerializationMessage
                 print(conn, " is now registered")
                 code = message.code
-                if code == Serializer.JSON:
+                if type(code) == str:
+                    code = int(code)
+
+                if code == Serializer.JSON or code == 0:
                     self.socketSerialization[conn] = Serializer.JSON
-                elif code == Serializer.XML:
+                elif code == Serializer.XML or code == 1:
                     self.socketSerialization[conn] = Serializer.XML
-                elif code == Serializer.PICKLE:
+                elif code == Serializer.PICKLE or code == 2:
                     self.socketSerialization[conn] = Serializer.PICKLE
-                
+
+                # print("I REGISTERRED ----------> ", code)
+
             elif msgCommand == 'subscribe': #SubMessage
                 print(conn, " has subbed to ", message.topic)
+                # print("topic ---> ", message.topic)
+                print("serial ---->", self.socketSerialization[conn])
                 self.subscribe(message.topic, conn, self.socketSerialization[conn])
 
             elif msgCommand == 'publish': #PubMessage
@@ -69,7 +76,7 @@ class Broker:
                 self.put_topic(message.topic, message.value)
                 # has to send to subscribers
                 for sub in self.list_subscriptions(message.topic):
-                    Protocol.send_msg(sub[0], message, sub[1])
+                    Protocol.send_msg(sub[0], message, sub[1].value) # has to have value to be 0... instead of JSON...
 
             elif msgCommand == 'ask': #AskListMessage
                 print("Sending list of topics to ", conn)
@@ -135,7 +142,8 @@ class Broker:
                 else:
                     self.subscribers[t] = [(address, _format)]
         
-        Protocol.send_msg(address, Protocol.publish(topic, self._topics[topic]), _format) # sends the last message to the subscriber
+        Protocol.send_msg(address, Protocol.publish(topic, self._topics[topic]), _format.value) # sends the last message to the subscriber
+        # has to be _format-value to send 0... instead of Seralizer.JSON... --> gives error in send_msg
 
         
 

@@ -53,7 +53,7 @@ class Queue:
         # o primeiro pull envia a ultima subscrição
         # os próximos bloqueiam até alguém publicar algo no topico
         message = Protocol.recv_msg(self.socket)
-        if message == None: 
+        if message is None: 
             return None
         return (message.topic, message.value)
 
@@ -65,6 +65,7 @@ class Queue:
         # não retorna nada
         message = Protocol.ask_list()
         Protocol.send_msg(self.socket, message , self.code)
+        # callback(Protocol.recv_msg(self.socket))
 
     def cancel(self):
         """Cancel subscription."""
