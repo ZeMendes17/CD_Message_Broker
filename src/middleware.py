@@ -26,14 +26,13 @@ class Queue:
         self.topic = topic
         self._type = _type
         self.code = 0 # if it is not defined send in JSON
-        # self.queue = LifoQueue()
-
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        # self.selector = selectors.DefaultSelector()
         self.host = 'localhost'
         self.port = 5000
+
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.selector = selectors.DefaultSelector()
         self.socket.connect((self.host, self.port))
-        # self.selector.register(self.socket, selectors.EVENT_READ, self.pull)
+        self.selector.register(self.socket, selectors.EVENT_READ, self.pull)
 
         # if _type == MiddlewareType.CONSUMER:
         #     Protocol.send_msg(self.socket, Protocol.subscribe(self.topic), self.code)
@@ -99,7 +98,7 @@ class PickleQueue(Queue):
     def __init__(self, topic, _type=MiddlewareType.CONSUMER):
         super().__init__(topic, _type)
         self.code = 2
-        Protocol.send_msg(self.socket, Protocol.register(self.code), 0)
+        Protocol.send_msg(self.socket, Protocol.serialize(self.code), 0)
 
         if _type == MiddlewareType.CONSUMER:
             Protocol.send_msg(self.socket, Protocol.subscribe(topic), self.code)
